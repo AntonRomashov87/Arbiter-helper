@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Арбітр-Помічник · Smart Chess System</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="chess.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo">⚖️</span><div><b>Арбітр-Помічник</b><small>Smart Chess System® · Закони шахів ФІДЕ, ред. 2023</small></div></div>
+  <button class="icon-btn" id="btnSet" aria-label="Налаштування">⚙️</button>
+</header>
+
+<main>
+<!-- БОТ -->
+<section id="tab-quick" class="tab active">
+  <div class="card" id="evBar"></div>
+  <div class="card"><h2>⚡ Швидке рішення</h2><div class="qgrid" id="qCats"></div><div id="qItems" style="margin-top:8px"></div></div>
+  <div id="qOut"></div>
+  <div class="card"><h2>🚨 Лічильник порушень</h2>
+    <div class="row nw"><div style="flex:1"><div class="sm muted">Тур</div><input type="text" id="vRound" inputmode="numeric"></div><div style="flex:1"><div class="sm muted">Дошка</div><input type="text" id="vBoard" inputmode="numeric"></div></div>
+    <div class="row" style="margin:8px 0"><div class="seg" id="vCol"><button data-v="w" class="on">Білі</button><button data-v="b">Чорні</button></div><span class="sm muted" id="vPl"></span></div>
+    <div class="row" id="vBtns"><button class="b" data-vt="ill">⛔ Нелегальний хід</button><button class="b" data-vt="warn">⚠️ Попередження</button><button class="b" data-vt="oth">➕ Інше</button></div>
+    <div id="vRes" style="margin-top:8px"></div><div id="vList"></div>
+  </div>
+</section>
+
+<section id="tab-bot" class="tab">
+  <div class="card">
+    <h2>Бот-арбітр</h2>
+    <div class="muted sm">Опишіть суперечку — отримаєте вердикт зі статтею Законів шахів. Для розбору позиції сфотографуйте дошку (вкладка «Дошка»).</div>
+    <div class="chips" id="botChips"></div>
+  </div>
+  <div id="msgs"></div>
+  <div class="chatbar">
+    <button class="b" id="chatMic" aria-label="Голос">🎤</button><textarea id="chatIn" rows="2" placeholder="Напр.: гравець торкнувся коня, а потім пішов слоном…"></textarea>
+    <button class="b pri" id="chatSend">➤</button>
+  </div>
+  <div class="card sm">
+    <b>Алгоритм арбітра в суперечці</b>
+    <ol style="margin:6px 0 0 18px;padding:0">
+      <li>Зупиніть годинник, не підказуйте нічого жодній стороні.</li>
+      <li>Вислухайте кожного окремо; з’ясуйте факти (позиція, бланки, свідки).</li>
+      <li>Знайдіть статтю: формат партії (класика/рапід/бліц), регламент змагання.</li>
+      <li>Оголосіть рішення та санкцію; запишіть у протокол.</li>
+      <li>Нагадайте про право апеляції за регламентом.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- СУПЕРЕЧКА -->
+<section id="tab-wiz" class="tab">
+  <div class="card"><h2>Сценарії спорів</h2><div class="muted sm">Працює без інтернету. Відповідайте на запитання — отримайте рішення зі статтею.</div></div>
+  <div id="wiz"></div>
+</section>
+
+<!-- ДОШКА -->
+<section id="tab-board" class="tab">
+  <div class="card">
+    <h2>Дошка: фото → вердикт</h2>
+    <div class="muted sm">Сфотографуйте дошку, перевірте розпізнавання (сумнівні клітинки підсвічені), вкажіть чий хід та в кого впав прапорець.</div>
+    <div class="row" style="margin-top:8px">
+      <label class="b pri" for="fileCam">📷 Сфотографувати</label>
+      <label class="b" for="fileGal">🖼 З галереї</label>
+      <input id="fileCam" type="file" accept="image/*" capture="environment" hidden>
+      <input id="fileGal" type="file" accept="image/*" hidden>
+    </div>
+    <div id="recoStatus" class="sm muted" style="margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <div id="bd"></div>
+    <div class="pal" id="pal"></div>
+    <div class="row">
+      <button class="b" id="bStart">Стартова</button>
+      <button class="b" id="bClear">Очистити</button>
+      <button class="b" id="bFlip">↕ Перевернути</button>
+    </div>
+    <div class="row" style="margin-top:8px"><input type="text" id="fenIn" placeholder="Вставити FEN…" style="flex:1"><button class="b" id="fenGo">OK</button></div>
+    <h3>Чий хід</h3>
+    <div class="seg" id="segTurn"><button data-v="w" class="on">Білі</button><button data-v="b">Чорні</button></div>
+    <h3>Прапорець упав у…</h3>
+    <div class="seg" id="segFlag"><button data-v="" class="on">Ніхто</button><button data-v="w">Білих</button><button data-v="b">Чорних</button></div>
+    <h3>Перевірити хід (нелегальний?)</h3>
+    <div class="row nw"><input type="text" id="mvIn" placeholder="Nf3, e2e4, O-O…" style="flex:1"><button class="b" id="mvGo">Перевірити</button></div>
+    <div class="row" style="margin-top:12px">
+      <button class="b pri" id="bJudge">⚖️ Винести рішення</button>
+      <button class="b" id="bAsk">🤖 Пояснити ботом</button>
+    </div>
+  </div>
+  <div id="judge"></div>
+</section>
+
+<!-- ЗАПИС -->
+<section id="tab-rec" class="tab">
+  <div class="card"><h2>Перевірка за записом партії</h2>
+    <div class="muted sm">Вставте PGN/список ходів або сфотографуйте бланк. Знаходить нелегальний хід, 3- і 5-кратне повторення, правила 50 і 75 ходів.</div>
+    <textarea id="recIn" rows="6" placeholder="1. e4 e5 2. Nf3 Nc6 …" style="margin-top:8px"></textarea>
+    <div class="row" style="margin-top:8px"><button class="b pri" id="recGo">▶ Перевірити</button><label class="b" for="recPhoto">📷 Фото бланка</label><input id="recPhoto" type="file" accept="image/*" capture="environment" hidden></div>
+    <div class="sm muted" id="recSt" style="margin-top:6px"></div>
+  </div>
+  <div id="recOut"></div>
+</section>
+
+<!-- ТРЕНАЖЕР -->
+<section id="tab-learn" class="tab">
+<div class="seg" id="segLearn"><button data-v="tr" class="on">Тренажер</button><button data-v="cert">Атестація</button></div>
+<div id="paneTr">
+  <div class="card">
+    <h2>Тренажер арбітра</h2>
+    <div class="muted sm" id="trStats"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="b pri" data-tr="rand">🎲 Випадкове</button>
+      <button class="b" data-tr="exam">📝 Іспит (10)</button>
+      <button class="b" data-tr="flag">⏱ Прапорець: результат</button>
+      <button class="b" data-tr="wrong">🔁 Мої помилки</button>
+      <div class="sm muted" id="trTimer" style="width:100%"></div>
+    </div>
+  </div>
+  <div id="tr"></div>
+</section>
+
+</div>
+<div id="paneCert" hidden>
+  <div class="card"><h2>Підготовка до атестації арбітра</h2>
+    <div class="muted sm">Чек-лист зберігається на цьому пристрої. Актуальність змін FIDE перевіряйте у <a href="https://handbook.fide.com" target="_blank" rel="noopener">FIDE Handbook</a> і на <a href="https://rcc.fide.com" target="_blank" rel="noopener">rcc.fide.com</a>.</div>
+    <div class="prog"><i id="certBar" style="width:0"></i></div><div class="sm muted" id="certTxt"></div>
+  </div>
+  <div id="cert"></div>
+</div>
+</section>
+
+<!-- ЖУРНАЛ -->
+<section id="tab-log" class="tab">
+  <div class="card">
+    <h2>Журнал випадків</h2>
+    <div class="muted sm">Збережені ситуації та рішення. Бот враховує їх як прецеденти. Дані лежать лише в цьому браузері — робіть експорт для резервної копії.</div>
+    <input type="text" id="logQ" placeholder="Пошук: гравець, турнір, стаття, результат…" style="margin-top:8px">
+    <div class="row" style="margin-top:8px">
+      <button class="b pri" id="logNew">➕ Новий запис</button>
+      <button class="b" id="logExp">⬇ JSON</button>
+      <button class="b" id="logCsv">⬇ CSV</button>
+      <button class="b" id="logSum">📊 Підсумок</button><button class="b" id="syncNow">☁ Синхр.</button>
+      <label class="b" for="logImp">⬆ Імпорт</label><input id="logImp" type="file" accept="application/json,.json" hidden>
+    </div>
+    <div class="sm muted" id="logStat" style="margin-top:6px"></div><div class="sm muted" id="syncSt"></div>
+  </div>
+  <div id="logList"></div>
+</section>
+
+<footer>Smart Chess System® · Антон Ромашов · довідковий інструмент: остаточне рішення — за арбітром і регламентом змагання</footer>
+</main>
+
+<nav id="nav">
+  <button data-tab="quick" class="on"><span>⚡</span>Швидко</button>
+  <button data-tab="bot"><span>💬</span>Бот</button>
+  <button data-tab="wiz"><span>⚖️</span>Спори</button>
+  <button data-tab="board"><span>♟</span>Дошка</button>
+  <button data-tab="rec"><span>📜</span>Запис</button>
+  <button data-tab="log"><span>📒</span>Журнал</button>
+  <button data-tab="learn"><span>🎓</span>Навчання</button>
+</nav>
+
+<dialog id="dlg">
+  <h2>Налаштування бота</h2>
+  <div class="muted sm">Потрібні для чату з ботом і розпізнавання фото. Ключ зберігається лише у цьому браузері. Сценарії, дошка (ручна), тренажер і чек-лист працюють без нього.</div>
+  <h3>Gemini API key</h3><input type="password" id="cfgKey" autocomplete="off">
+  <h3>Модель</h3><input type="text" id="cfgModel" placeholder="gemini-3.6-flash">
+  <h3>Proxy URL (необов’язково, Netlify Function)</h3><input type="text" id="cfgProxy" placeholder="https://…/.netlify/functions/gemini">
+  <div class="muted sm">Проксі приймає POST {model, contents, systemInstruction, generationConfig} і повертає відповідь Gemini без змін.</div>
+  <div class="row" style="margin-top:12px"><button class="b" id="cfgEv">🏆 Налаштування турніру</button></div>
+  <div class="row" style="margin-top:12px"><button class="b pri" id="cfgSave">Зберегти</button><button class="b" id="cfgClose">Закрити</button></div>
+</dialog>
+
+<dialog id="dlgEv">
+  <h2>Налаштування турніру</h2>
+  <h3>Назва турніру</h3><input type="text" id="evName">
+  <h3>Формат</h3><div class="seg" id="segFmt"><button data-v="classic" class="on">Класика</button><button data-v="rapid">Рапід</button><button data-v="blitz">Бліц</button></div>
+  <div class="row nw"><div style="flex:1"><h3>Штраф, хв</h3><input type="number" id="evPen" min="0"></div><div style="flex:1"><h3>Запізнення, хв</h3><input type="number" id="evDef" min="0"></div></div>
+  <label class="chk"><input type="checkbox" id="evNoDraw"><span>Пропозиції нічиї заборонені регламентом</span></label>
+  <h3>Головний арбітр</h3><input type="text" id="evArb">
+  <h3>Жеребкування (дошка;білі;чорні — по рядку)</h3><textarea id="evPairs" rows="4" placeholder="1;Іваненко І.;Петренко П."></textarea>
+  <h3>Синхронізація Firebase (необов’язково)</h3><input type="text" id="evUrl" placeholder="https://ваш-проєкт-default-rtdb.firebaseio.com"><input type="text" id="evRoom" placeholder="Код кімнати (літери/цифри)" style="margin-top:6px">
+  <div class="muted sm">У Firebase потрібні правила: {"rules":{"arbitr":{"$room":{".read":true,".write":true}}}}. Код кімнати — як пароль: знає код — бачить журнал.</div>
+  <div class="row" style="margin-top:12px"><button class="b pri" id="evSave">Зберегти</button><button class="b" id="evCancel">Скасувати</button></div>
+</dialog>
+<dialog id="dlgSum"><h2>Підсумок турніру</h2><textarea id="sumTxt" rows="14"></textarea>
+  <div class="row" style="margin-top:10px"><button class="b pri" id="sumCopy">📋 Копіювати</button><button class="b" id="sumPrint">🖨 Друк</button><button class="b" id="sumClose">Закрити</button></div></dialog>
+<div id="printArea"></div>
+<dialog id="dlgCase">
+  <h2 id="caseH">Зберегти в журнал</h2>
+  <h3>Коротко про ситуацію</h3><input type="text" id="cTitle">
+  <h3>Результат / рішення</h3><input type="text" id="cRes" placeholder="1-0, 0-1, ½-½, +2 хв…">
+  <h3>Турнір</h3><input type="text" id="cTour" list="tourList"><datalist id="tourList"></datalist>
+  <div class="row nw"><div style="flex:1"><h3>Тур</h3><input type="text" id="cRound"></div><div style="flex:1"><h3>Дошка</h3><input type="text" id="cBoard"></div></div>
+  <h3>Гравці</h3><input type="text" id="cPlayers" placeholder="Білі — Чорні">
+  <h3>Нотатки арбітра (що вирішили, чому)</h3><textarea id="cNotes" rows="3"></textarea>
+  <div class="row" style="margin-top:12px"><button class="b pri" id="cSave">Зберегти</button><button class="b" id="cPrint">🖨 Протокол</button><button class="b" id="cCancel">Скасувати</button></div>
+</dialog>
+
+<!-- ============ ЛОГІКА (чиста, без DOM) ============ -->
+<script src="logic.js"></script>
+
+<!-- ============ ДАНІ: сценарії, питання, атестація ============ -->
+<script src="data.js"></script>
+
+<!-- ============ ІНТЕРФЕЙС ============ -->
+<script src="ui.js"></script>
+</body>
+</html>
